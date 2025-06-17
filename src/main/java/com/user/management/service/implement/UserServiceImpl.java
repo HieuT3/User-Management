@@ -1,0 +1,106 @@
+package com.user.management.service.implement;
+
+import com.user.management.dto.request.UserRequest;
+import com.user.management.dto.response.UserResponse;
+import com.user.management.entity.User;
+import com.user.management.exception.AppException;
+import com.user.management.exception.ErrorCode;
+import com.user.management.mapper.UserMapper;
+import com.user.management.repository.UserRepository;
+import com.user.management.service.UserService;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.UUID;
+
+@Service
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@RequiredArgsConstructor
+public class UserServiceImpl implements UserService {
+
+    UserRepository userRepository;
+    UserMapper userMapper;
+
+    @Override
+    public List<UserResponse> getAllUsers() {
+        return userRepository.findAll()
+                .stream()
+                .map(userMapper::convertToUserResponse)
+                .toList();
+    }
+
+    @Override
+    public UserResponse getUserByUserId(UUID userId) {
+        User user = getUserEntityByUserId(userId);
+        return userMapper.convertToUserResponse(user);
+    }
+
+    @Override
+    public UserResponse addUser(UserRequest userRequest) {
+        String username = userRequest.getUsername();
+        if (userRepository.existsUserByUsername(username))
+            throw new AppException(ErrorCode.USER_WITH_USERNAME_ALREADY_EXISTS);
+
+        String email = userRequest.getEmail();
+        if (userRepository.existsUserByEmail(email))
+            throw new AppException(ErrorCode.USER_WITH_EMAIL_ALREADY_EXISTS);
+
+        User user = new User();
+        user.setFullName(userRequest.getFullName());    
+        user.setUsername(userRequest.getUsername());
+        user.setPassword(userRequest.getPassword());
+        user.setEmail(userRequest.getEmail());
+        user.setPhone(userRequest.getPhone());
+        user.setAvatarUrl(userRequest.getAvatarUrl());
+
+        user = userRepository.save(user);
+        return userMapper.convertToUserResponse(user);
+    }
+
+    @Override
+    public UserResponse updateUserByUserId(UUID userId, UserRequest userRequest) {
+        User existingUserByUserId = getUserEntityByUserId(userId);
+
+        User existingUserByUsername = userRepository.findUserByUsername(userRequest.getUsername())
+                .orElse(null);
+
+        User existingUserByEmail = userRepository.findUserByEmail(userRequest.getEmail())
+                .orElse(null);
+
+        if (existingUserByUsername != null &&
+            !existingUserByUsername.getUserId().equals(existingUserByUserId.getUserId())
+        )
+            throw new AppException(ErrorCode.USER_WITH_USERNAME_ALREADY_EXISTS);
+
+        if (existingUserByEmail != null &&
+            !existingUserByEmail.getUserId().equals(existingUserByUserId.getUserId())
+        )
+            throw new AppException(ErrorCode.USER_WITH_EMAIL_ALREADY_EXISTS);
+
+        existingUserByUserId.setFullName(userRequest.getFullName());
+        existingUserByUserId.setUsername(userRequest.getUsername());
+        existingUserByUserId.setEmail(userRequest.getEmail());
+        existingUserByUserId.setPassword(userRequest.getPassword());
+        existingUserByUserId.setPhone(userRequest.getPhone());
+        existingUserByUserId.setAvatarUrl(userRequest.getAvatarUrl());
+
+        User updatedUser = userRepository.save(existingUserByUserId);
+        return userMapper.convertToUserResponse(updatedUser);
+    }
+
+    @Override
+    public void deleteUserByUserId(UUID userId) {
+        User user = getUserEntityByUserId(userId);
+        userRepository.delete(user);
+    }
+
+    private User getUserEntityByUserId(UUID userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(
+                        () -> new AppException(ErrorCode.USER_NOT_FOUND)
+                );
+    }
+}
