@@ -1,5 +1,7 @@
 package com.user.management.controller;
 
+import com.user.management.dto.request.UpdateStatusUserRequest;
+import com.user.management.dto.request.UpdateUserRequest;
 import com.user.management.dto.request.UserRequest;
 import com.user.management.dto.response.ApiResponse;
 import com.user.management.dto.response.UserResponse;
@@ -16,7 +18,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1/user")
+@RequestMapping("/api/v1/users")
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @RequiredArgsConstructor
 @Slf4j
@@ -71,10 +73,10 @@ public class UserController {
     @PutMapping("/{userId}")
     public ResponseEntity<ApiResponse<UserResponse>> updateUserByUserId(
             @PathVariable("userId") UUID userId,
-            @Valid @RequestBody UserRequest userRequest
-    ) {
+            @RequestBody UpdateUserRequest updateUserRequest
+            ) {
         log.info("Updating user with ID: {}", userId);
-        UserResponse userResponse = userService.updateUserByUserId(userId, userRequest);
+        UserResponse userResponse = userService.updateUserByUserId(userId, updateUserRequest);
         return ResponseEntity.ok(
                 ApiResponse.<UserResponse>builder()
                         .success(true)
@@ -84,8 +86,24 @@ public class UserController {
         );
     }
 
+    @PutMapping("/{userId}/status")
+    public ResponseEntity<ApiResponse<UserResponse>> updateStatusUserByUserId(
+            @PathVariable("userId") UUID userId,
+            @Valid @RequestBody UpdateStatusUserRequest updateStatusUserRequest
+            ) {
+        log.info("Updating status for user with ID: {}", userId);
+        UserResponse userResponse = userService.updateStatusUserByUserId(userId, updateStatusUserRequest);
+        return ResponseEntity.ok(
+                ApiResponse.<UserResponse>builder()
+                        .success(true)
+                        .message("User status updated successfully")
+                        .data(userResponse)
+                        .build()
+        );
+    }
+
     @DeleteMapping("/{userId}")
-    public ResponseEntity<ApiResponse<Void>> deleteUserByUserId(
+    public ResponseEntity<ApiResponse<Void>> softDeleteUserByUserId(
             @PathVariable("userId") UUID userId
     ) {
         log.info("Deleting user with ID: {}", userId);

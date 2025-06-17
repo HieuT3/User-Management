@@ -1,5 +1,7 @@
 package com.user.management.service.implement;
 
+import com.user.management.dto.request.UpdateStatusUserRequest;
+import com.user.management.dto.request.UpdateUserRequest;
 import com.user.management.dto.request.UserRequest;
 import com.user.management.dto.response.UserResponse;
 import com.user.management.entity.User;
@@ -12,6 +14,7 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -61,40 +64,42 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserResponse updateUserByUserId(UUID userId, UserRequest userRequest) {
+    public UserResponse updateUserByUserId(UUID userId, UpdateUserRequest updateUserRequest) {
         User existingUserByUserId = getUserEntityByUserId(userId);
 
-        User existingUserByUsername = userRepository.findUserByUsername(userRequest.getUsername())
+        User existingUserByEmail = userRepository.findUserByEmail(updateUserRequest.getEmail())
                 .orElse(null);
-
-        User existingUserByEmail = userRepository.findUserByEmail(userRequest.getEmail())
-                .orElse(null);
-
-        if (existingUserByUsername != null &&
-            !existingUserByUsername.getUserId().equals(existingUserByUserId.getUserId())
-        )
-            throw new AppException(ErrorCode.USER_WITH_USERNAME_ALREADY_EXISTS);
 
         if (existingUserByEmail != null &&
             !existingUserByEmail.getUserId().equals(existingUserByUserId.getUserId())
         )
             throw new AppException(ErrorCode.USER_WITH_EMAIL_ALREADY_EXISTS);
 
-        existingUserByUserId.setFullName(userRequest.getFullName());
-        existingUserByUserId.setUsername(userRequest.getUsername());
-        existingUserByUserId.setEmail(userRequest.getEmail());
-        existingUserByUserId.setPassword(userRequest.getPassword());
-        existingUserByUserId.setPhone(userRequest.getPhone());
-        existingUserByUserId.setAvatarUrl(userRequest.getAvatarUrl());
+        if (updateUserRequest.getFullName() != null)
+            existingUserByUserId.setFullName(updateUserRequest.getFullName());
+        if (updateUserRequest.getEmail() != null)
+            existingUserByUserId.setEmail(updateUserRequest.getEmail());
+        if (updateUserRequest.getPhone() != null)
+            existingUserByUserId.setPhone(updateUserRequest.getPhone());
+        if (updateUserRequest.getAvatarUrl() != null)
+            existingUserByUserId.setAvatarUrl(updateUserRequest.getAvatarUrl());
 
         User updatedUser = userRepository.save(existingUserByUserId);
         return userMapper.convertToUserResponse(updatedUser);
     }
 
     @Override
-    public void deleteUserByUserId(UUID userId) {
+    public UserResponse updateStatusUserByUserId(UUID userId, UpdateStatusUserRequest updateStatusUserRequest) {
         User user = getUserEntityByUserId(userId);
-        userRepository.delete(user);
+        user.setStatus(updateStatusUserRequest.getStatus());
+        user = userRepository.save(user);
+        return userMapper.convertToUserResponse(user);
+    }
+
+    @Override
+    @Transactional
+    public void deleteUserByUserId(UUID userId) {
+        userRepository.softDeleteUserByUserId(userId);
     }
 
     private User getUserEntityByUserId(UUID userId) {
