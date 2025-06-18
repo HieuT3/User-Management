@@ -3,6 +3,7 @@ package com.user.management.dto.response;
 import com.user.management.constant.StatusEnum;
 import lombok.*;
 
+import java.util.Set;
 import java.util.UUID;
 
 @Data
@@ -15,4 +16,5 @@ public class UserResponse {
     private String avatarUrl;
     private StatusEnum status;
     private boolean isDeleted;
+    private Set<RoleResponse> roles;
 }

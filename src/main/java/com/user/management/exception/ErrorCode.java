@@ -14,7 +14,9 @@ public enum ErrorCode {
 
     USER_NOT_FOUND("User not found", HttpStatus.NOT_FOUND),
     USER_WITH_USERNAME_ALREADY_EXISTS("User with username already exists", HttpStatus.CONFLICT),
-    USER_WITH_EMAIL_ALREADY_EXISTS( "User with email already exists", HttpStatus.CONFLICT);
+    USER_WITH_EMAIL_ALREADY_EXISTS( "User with email already exists", HttpStatus.CONFLICT),
+    ROLE_NOT_FOUND("Role not found", HttpStatus.NOT_FOUND),
+    ROLE_WITH_NAME_ALREADY_EXISTS("Role with name already exists", HttpStatus.CONFLICT);
 
     String message;
     HttpStatusCode statusCode;

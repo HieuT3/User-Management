@@ -1,10 +1,14 @@
 package com.user.management.dto.request;
 
+import com.user.management.constant.RoleEnum;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.List;
+import java.util.Set;
 
 @AllArgsConstructor
 @Getter
@@ -22,4 +26,5 @@ public class UserRequest {
     private String email;
     private String phone;
     private String avatarUrl;
+    private Set<RoleEnum> roles;
 }
