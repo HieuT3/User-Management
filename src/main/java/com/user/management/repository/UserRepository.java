@@ -1,6 +1,7 @@
 package com.user.management.repository;
 
 import com.user.management.entity.User;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -14,6 +15,7 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     boolean existsUserByEmail(String email);
 
+    @EntityGraph(attributePaths = "roles")
     Optional<User> findUserByUsername(String username);
 
     Optional<User> findUserByEmail(String email);

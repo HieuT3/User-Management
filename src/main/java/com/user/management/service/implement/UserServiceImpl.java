@@ -1,9 +1,11 @@
 package com.user.management.service.implement;
 
 import com.user.management.constant.RoleEnum;
+import com.user.management.dto.request.RegistrationRequest;
 import com.user.management.dto.request.UpdateStatusUserRequest;
 import com.user.management.dto.request.UpdateUserRequest;
 import com.user.management.dto.request.UserRequest;
+import com.user.management.dto.response.RegistrationResponse;
 import com.user.management.dto.response.UserResponse;
 import com.user.management.entity.Role;
 import com.user.management.entity.User;
@@ -16,10 +18,10 @@ import com.user.management.service.UserService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -33,6 +35,7 @@ public class UserServiceImpl implements UserService {
     UserRepository userRepository;
     RoleService roleService;
     UserMapper userMapper;
+    PasswordEncoder passwordEncoder;
 
     @Override
     public List<UserResponse> getAllUsers() {
@@ -45,6 +48,15 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserResponse getUserByUserId(UUID userId) {
         User user = getUserEntityByUserId(userId);
+        return userMapper.convertToUserResponse(user);
+    }
+
+    @Override
+    public UserResponse getUserByUserName(String username) {
+        User user = userRepository.findUserByUsername(username)
+                .orElseThrow(
+                        () -> new AppException(ErrorCode.USER_NOT_FOUND)
+                );
         return userMapper.convertToUserResponse(user);
     }
 
@@ -62,9 +74,9 @@ public class UserServiceImpl implements UserService {
 
         User user = new User();
         user.setFullName(userRequest.getFullName());
-        user.setUsername(userRequest.getUsername());
-        user.setPassword(userRequest.getPassword());
-        user.setEmail(userRequest.getEmail());
+        user.setUsername(username);
+        user.setPassword(passwordEncoder.encode(userRequest.getPassword()));
+        user.setEmail(email);
         user.setPhone(userRequest.getPhone());
         user.setAvatarUrl(userRequest.getAvatarUrl());
 
@@ -76,6 +88,31 @@ public class UserServiceImpl implements UserService {
         }
         user = userRepository.save(user);
         return userMapper.convertToUserResponse(user);
+    }
+
+    @Override
+    public RegistrationResponse registerUser(RegistrationRequest registrationRequest) {
+        String username = registrationRequest.getUsername();
+        if (userRepository.existsUserByUsername(username))
+            throw new AppException(ErrorCode.USER_WITH_USERNAME_ALREADY_EXISTS);
+
+        String email = registrationRequest.getEmail();
+        if (userRepository.existsUserByEmail(email))
+            throw new AppException(ErrorCode.USER_WITH_EMAIL_ALREADY_EXISTS);
+
+        User user = new User();
+        user.setFullName(registrationRequest.getFullName());
+        user.setUsername(username);
+        user.setPassword(passwordEncoder.encode(registrationRequest.getPassword()));
+        user.setEmail(email);
+        user.setPhone(registrationRequest.getPhone());
+        user.setAvatarUrl(registrationRequest.getAvatarUrl());
+
+        Role userRole = roleService.getRoleEntityByRoleName(RoleEnum.user);
+        user.setRoles(Set.of(userRole));
+
+        user = userRepository.save(user);
+        return userMapper.convertToRegistrationResponse(user);
     }
 
     @Override
